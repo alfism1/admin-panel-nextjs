@@ -9,3 +9,5 @@ test-results
 pnpm-lock.yaml
 drizzle/**/*.sql
 drizzle/meta
+
+docs/build-brief.md
