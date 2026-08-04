@@ -46,6 +46,11 @@ Every method **fails open**: if Redis is unreachable, a read is a miss and a
 write is a no-op. The request still completes off the database. This is
 deliberate — an unavailable cache should degrade latency, not availability.
 
+`cache.get` returns `undefined` for a miss and `null` for a cached `null`. The
+distinction matters: without it `cache.wrap` re-runs its producer for every
+legitimately-null value, so a lookup of a deleted flag key would hit the
+database on every render.
+
 Tags are Redis sets (`cache:tag:{name}`) holding the keys tagged with them.
 `invalidateTags` reads the set, deletes its members and the set, in one
 pipeline.

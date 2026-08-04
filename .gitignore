@@ -49,3 +49,6 @@ next-env.d.ts
 
 # local overrides
 !.env.example
+
+# playwright auth state
+/.playwright

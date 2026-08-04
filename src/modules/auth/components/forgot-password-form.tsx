@@ -53,7 +53,9 @@ export function ForgotPasswordForm() {
           <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
             <MailCheck className="size-5 text-primary" aria-hidden />
           </div>
-          <CardTitle className="text-xl">Check your inbox</CardTitle>
+          <CardTitle>
+            <h1 className="text-xl">Check your inbox</h1>
+          </CardTitle>
           <CardDescription>
             If an account exists for{" "}
             <span className="font-medium text-foreground">
@@ -74,7 +76,9 @@ export function ForgotPasswordForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Forgot your password?</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Forgot your password?</h1>
+        </CardTitle>
         <CardDescription>
           Enter your e-mail and we&apos;ll send you a link to choose a new one.
         </CardDescription>

@@ -34,16 +34,23 @@ export interface CacheOptions {
 
 const DEFAULT_TTL_SECONDS = 60;
 
-async function get<T>(key: string): Promise<T | null> {
+/**
+ * `undefined` means **miss**; `null` means a `null` was cached.
+ *
+ * Collapsing the two would make `wrap` re-run its producer on every call for
+ * any value that is legitimately `null` — "this flag key doesn't exist" being
+ * the common one, which turns a deleted flag into a database query per render.
+ */
+async function get<T>(key: string): Promise<T | undefined> {
   try {
     const raw = await getStore().get(key);
-    return raw === null ? null : (JSON.parse(raw) as T);
+    return raw === null ? undefined : (JSON.parse(raw) as T);
   } catch (error) {
     getLogger({ key }).warn(
       { err: error },
       "cache.get failed — treating as miss",
     );
-    return null;
+    return undefined;
   }
 }
 
@@ -85,7 +92,8 @@ async function wrap<T>(
   options: CacheOptions = {},
 ): Promise<T> {
   const hit = await get<T>(key);
-  if (hit !== null) return hit;
+  // `undefined` is the only miss signal — see `get`. A cached `null` is a hit.
+  if (hit !== undefined) return hit;
 
   const value = await producer();
   await set(key, value, options);

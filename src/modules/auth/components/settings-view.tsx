@@ -121,7 +121,9 @@ function ProfileCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Profile</CardTitle>
+        <CardTitle>
+          <h2 className="text-base">Profile</h2>
+        </CardTitle>
         <CardDescription>
           Your e-mail is managed by an administrator.
         </CardDescription>
@@ -206,7 +208,9 @@ function PasswordCard() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Password</CardTitle>
+        <CardTitle>
+          <h2 className="text-base">Password</h2>
+        </CardTitle>
         <CardDescription>
           Changing it signs you out everywhere else.
         </CardDescription>
@@ -322,9 +326,11 @@ function TwoFactorCard({
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <div>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <ShieldCheck className="size-4" aria-hidden />
-              Two-factor authentication
+            <CardTitle>
+              <h2 className="flex items-center gap-2 text-base">
+                <ShieldCheck className="size-4" aria-hidden />
+                Two-factor authentication
+              </h2>
             </CardTitle>
             <CardDescription>
               A time-based code from your authenticator app, on top of your
@@ -525,7 +531,9 @@ function SessionsCard({ sessions }: { sessions: SessionSummary[] }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Active sessions</CardTitle>
+        <CardTitle>
+          <h2 className="text-base">Active sessions</h2>
+        </CardTitle>
         <CardDescription>
           Every device currently signed in as you.
         </CardDescription>

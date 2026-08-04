@@ -20,6 +20,23 @@ import { getRedis } from "@/lib/redis";
  * sessions through `auth.api.getSession`.
  */
 
+const baseURL = env.BETTER_AUTH_URL ?? appUrl;
+
+/**
+ * `Secure` cookies are refused by browsers over plain HTTP, so this must track
+ * the *public origin*, not `NODE_ENV`.
+ *
+ * Deriving it from `NODE_ENV` breaks two real setups: a production build served
+ * over http for testing (the browser silently drops the session cookie and
+ * every request looks signed-out), and a development build on an https tunnel.
+ * Behind a TLS-terminating proxy the public URL is still https, so this stays
+ * correct there too.
+ */
+const useSecureCookies = baseURL.startsWith("https://");
+
+const authMax = env.AUTH_RATE_LIMIT_MAX;
+const authWindow = env.AUTH_RATE_LIMIT_WINDOW_SECONDS;
+
 const THIRTY_DAYS_IN_SECONDS = 60 * 60 * 24 * 30;
 const ONE_DAY_IN_SECONDS = 60 * 60 * 24;
 const FIVE_MINUTES_IN_SECONDS = 60 * 5;
@@ -83,7 +100,7 @@ export const enabledSocialProviders = Object.keys(
 
 export const auth = betterAuth({
   appName: "Modern Admin",
-  baseURL: env.BETTER_AUTH_URL ?? appUrl,
+  baseURL,
   secret: env.BETTER_AUTH_SECRET,
 
   database: drizzleAdapter(db, {
@@ -162,13 +179,19 @@ export const auth = betterAuth({
     window: 60,
     max: 100,
     storage: getRedis() ? "secondary-storage" : "memory",
+    /**
+     * Credential endpoints get a far tighter budget than the global one —
+     * these are the paths worth brute-forcing. Configurable via
+     * `AUTH_RATE_LIMIT_*`; see the note in `lib/env.ts`.
+     */
     customRules: {
-      "/sign-in/email": { window: 60, max: 5 },
-      "/sign-up/email": { window: 60 * 60, max: 5 },
-      "/forget-password": { window: 60 * 60, max: 5 },
-      "/reset-password": { window: 60 * 60, max: 5 },
-      "/two-factor/verify-totp": { window: 60, max: 5 },
-      "/send-verification-email": { window: 60 * 60, max: 5 },
+      "/sign-in/email": { window: authWindow, max: authMax },
+      "/sign-up/email": { window: authWindow * 60, max: authMax },
+      "/request-password-reset": { window: authWindow * 60, max: authMax },
+      "/reset-password": { window: authWindow * 60, max: authMax },
+      "/two-factor/verify-totp": { window: authWindow, max: authMax },
+      "/two-factor/verify-backup-code": { window: authWindow, max: authMax },
+      "/send-verification-email": { window: authWindow * 60, max: authMax },
     },
   },
 
@@ -177,7 +200,7 @@ export const auth = betterAuth({
     ipAddress: {
       ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
     },
-    useSecureCookies: isProduction,
+    useSecureCookies,
     cookiePrefix: AUTH_COOKIE_PREFIX,
   },
 

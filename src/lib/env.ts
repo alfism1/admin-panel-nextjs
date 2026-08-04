@@ -44,6 +44,20 @@ export const env = createEnv({
 
     AUDIT_LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
 
+    /**
+     * Sign-in / password-reset attempts allowed per IP per window. The defaults
+     * are the secure ones; they are configurable because different deployments
+     * sit behind different proxies (a shared NAT needs a higher ceiling), and
+     * because an e2e suite signing in repeatedly from one address would
+     * otherwise trip a limiter that is working exactly as intended.
+     */
+    AUTH_RATE_LIMIT_MAX: z.coerce.number().int().positive().default(5),
+    AUTH_RATE_LIMIT_WINDOW_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60),
+
     LOG_LEVEL: z
       .enum(["trace", "debug", "info", "warn", "error", "fatal"])
       .default("info"),
@@ -76,6 +90,8 @@ export const env = createEnv({
     MAIL_FROM: process.env.MAIL_FROM,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
     AUDIT_LOG_RETENTION_DAYS: process.env.AUDIT_LOG_RETENTION_DAYS,
+    AUTH_RATE_LIMIT_MAX: process.env.AUTH_RATE_LIMIT_MAX,
+    AUTH_RATE_LIMIT_WINDOW_SECONDS: process.env.AUTH_RATE_LIMIT_WINDOW_SECONDS,
     LOG_LEVEL: process.env.LOG_LEVEL,
     SEED_ADMIN_EMAIL: process.env.SEED_ADMIN_EMAIL,
     SEED_ADMIN_PASSWORD: process.env.SEED_ADMIN_PASSWORD,

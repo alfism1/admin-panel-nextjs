@@ -54,7 +54,9 @@ export function VerifyEmailPending() {
         <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
           <MailCheck className="size-5 text-primary" aria-hidden />
         </div>
-        <CardTitle className="text-xl">Verify your e-mail</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Verify your e-mail</h1>
+        </CardTitle>
         <CardDescription>
           {email ? (
             <>

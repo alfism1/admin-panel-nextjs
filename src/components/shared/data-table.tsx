@@ -277,9 +277,15 @@ export function DataTable<TData>({
           </div>
 
           {/* ---------- Mobile: card list ---------- */}
-          <ul className="grid gap-3 md:hidden">
+          {/*
+            `min-w-0` on both the list and each card is load-bearing: a grid
+            item defaults to `min-width: auto`, which refuses to shrink below
+            its longest unbreakable content. One long e-mail address is then
+            enough to push the whole page wider than a 375px viewport.
+          */}
+          <ul className="grid min-w-0 gap-3 md:hidden">
             {table.getRowModel().rows.map((row) => (
-              <li key={row.id} className="rounded-lg border p-4">
+              <li key={row.id} className="min-w-0 rounded-lg border p-4">
                 {selectable ? (
                   <div className="mb-3 flex items-center gap-2">
                     <Checkbox

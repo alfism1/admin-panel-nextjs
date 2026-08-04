@@ -63,11 +63,22 @@ export function SignInForm({
     });
 
     if (error) {
-      if (error.status === 403) {
-        // Better-Auth returns 403 when the address hasn't been verified yet.
+      /**
+       * Branch on `error.code`, not `error.status`. Several distinct failures
+       * share a 403 — an unverified address, a banned account, a rejected
+       * origin — and treating them all as "check your inbox" sends people
+       * hunting for an e-mail that was never sent.
+       */
+      if (error.code === "EMAIL_NOT_VERIFIED") {
         setUnverifiedEmail(values.email);
         setFormError(
           "Your e-mail address hasn't been verified yet. Check your inbox, or resend the link below.",
+        );
+        return;
+      }
+      if (error.code === "BANNED_USER") {
+        setFormError(
+          "This account has been suspended. Contact an administrator.",
         );
         return;
       }
@@ -95,7 +106,9 @@ export function SignInForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Sign in</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Sign in</h1>
+        </CardTitle>
         <CardDescription>
           Enter your credentials to access the admin panel.
         </CardDescription>

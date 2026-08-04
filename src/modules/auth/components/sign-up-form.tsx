@@ -65,7 +65,9 @@ export function SignUpForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Create an account</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Create an account</h1>
+        </CardTitle>
         <CardDescription>
           New accounts start with read-only access until an administrator
           assigns a role.

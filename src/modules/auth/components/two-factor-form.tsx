@@ -83,7 +83,9 @@ export function TwoFactorForm() {
         <div className="flex size-10 items-center justify-center rounded-full bg-primary/10">
           <KeyRound className="size-5 text-primary" aria-hidden />
         </div>
-        <CardTitle className="text-xl">Two-factor authentication</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Two-factor authentication</h1>
+        </CardTitle>
         <CardDescription>
           {mode === "totp"
             ? "Enter the 6-digit code from your authenticator app."

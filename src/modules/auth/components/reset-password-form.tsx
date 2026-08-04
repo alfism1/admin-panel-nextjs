@@ -62,7 +62,9 @@ export function ResetPasswordForm() {
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="text-xl">This link isn&apos;t valid</CardTitle>
+          <CardTitle>
+            <h1 className="text-xl">This link isn&apos;t valid</h1>
+          </CardTitle>
           <CardDescription>
             Password reset links expire after an hour and can only be used once.
             Request a fresh one to continue.
@@ -80,7 +82,9 @@ export function ResetPasswordForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl">Choose a new password</CardTitle>
+        <CardTitle>
+          <h1 className="text-xl">Choose a new password</h1>
+        </CardTitle>
         <CardDescription>
           You&apos;ll be signed out of other devices once it&apos;s changed.
         </CardDescription>
