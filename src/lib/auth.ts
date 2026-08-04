@@ -7,6 +7,7 @@ import { admin as adminPlugin, twoFactor } from "better-auth/plugins";
 
 import { db } from "@/db/client";
 import * as schema from "@/db/schema";
+import { AUTH_COOKIE_PREFIX } from "@/lib/auth-cookies";
 import { appUrl, env, isProduction } from "@/lib/env";
 import { getLogger } from "@/lib/logger";
 import { resetPasswordEmail, sendMail, verificationEmail } from "@/lib/mail";
@@ -177,7 +178,7 @@ export const auth = betterAuth({
       ipAddressHeaders: ["cf-connecting-ip", "x-real-ip", "x-forwarded-for"],
     },
     useSecureCookies: isProduction,
-    cookiePrefix: "modern-admin",
+    cookiePrefix: AUTH_COOKIE_PREFIX,
   },
 
   logger: {
