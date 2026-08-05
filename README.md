@@ -46,6 +46,7 @@ Generate a real secret with `openssl rand -base64 32`. Everything else in
 | `pnpm db:generate`                   | Generate a migration from schema changes                 |
 | `pnpm db:migrate`                    | Apply pending migrations                                 |
 | `pnpm db:seed`                       | Seed roles, permissions, admin, sample data (idempotent) |
+| `pnpm db:seed:products`              | Bulk-load products — 1M rows by default (idempotent)     |
 | `pnpm db:studio`                     | Drizzle Studio                                           |
 | `pnpm test` / `pnpm test:coverage`   | Unit + component tests                                   |
 | `pnpm test:e2e`                      | Playwright (builds and starts the app itself)            |

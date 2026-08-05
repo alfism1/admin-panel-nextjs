@@ -35,6 +35,7 @@ export const statement = {
   role: ["create", "read", "update", "delete", "assign"],
   auditLog: ["read", "export"],
   featureFlag: ["create", "read", "update", "delete", "toggle"],
+  product: ["create", "read", "update", "delete", "archive"],
 } as const satisfies Record<string, readonly string[]>;
 
 export const ac = createAccessControl(statement);
@@ -119,6 +120,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: allActions("role"),
       auditLog: allActions("auditLog"),
       featureFlag: allActions("featureFlag"),
+      product: allActions("product"),
     },
   },
   {
@@ -146,6 +148,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: ["read"],
       auditLog: ["read", "export"],
       featureFlag: allActions("featureFlag"),
+      product: ["create", "read", "update", "delete", "archive"],
     },
   },
   {
@@ -158,6 +161,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: ["read"],
       auditLog: ["read"],
       featureFlag: ["read"],
+      product: ["read"],
     },
   },
 ] as const;

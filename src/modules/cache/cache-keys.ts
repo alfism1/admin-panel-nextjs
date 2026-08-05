@@ -15,6 +15,8 @@ export const cacheTags = {
   featureFlags: "feature-flags",
   featureFlag: (key: string) => `feature-flag:${key}`,
   auditLogs: "audit-logs",
+  products: "products",
+  product: (id: string) => `product:${id}`,
 } as const;
 
 export const cacheKeys = {

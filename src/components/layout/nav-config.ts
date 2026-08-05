@@ -1,6 +1,7 @@
 import {
   Flag,
   LayoutDashboard,
+  Package,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -97,6 +98,19 @@ export const navigation: NavGroup[] = [
         icon: Settings,
         description: "Profile, password, two-factor and sessions",
         matchNested: true,
+      },
+    ],
+  },
+  {
+    label: "Product",
+    items: [
+      {
+        title: "Products",
+        href: "/products",
+        icon: Package,
+        description: "Catalogue, pricing and availability",
+        permission: "product:read", // typechecked against the statement
+        matchNested: true, // /products/123 highlights /products
       },
     ],
   },

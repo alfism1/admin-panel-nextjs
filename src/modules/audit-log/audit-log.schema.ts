@@ -42,6 +42,12 @@ export const AUDIT_ACTIONS = [
   "auditLog.purged",
 
   "system.seeded",
+
+  "product.created",
+  "product.updated",
+  "product.deleted",
+  "product.archived",
+  "product.unarchived",
 ] as const;
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
@@ -53,6 +59,7 @@ export const AUDIT_RESOURCE_TYPES = [
   "session",
   "auditLog",
   "system",
+  "product",
 ] as const;
 
 export type AuditResourceType = (typeof AUDIT_RESOURCE_TYPES)[number];

@@ -72,6 +72,12 @@ export interface DataTableProps<TData> {
   data: TData[];
   /** Row count across *all* pages, from the server. Drives the pager. */
   totalRows: number;
+  /**
+   * `totalRows` is a floor rather than the real count — the server stopped
+   * counting. Renders as "5,000+" and keeps the last page reachable, because
+   * the true page count is unknown and `Math.ceil` would invent one.
+   */
+  totalRowsCapped?: boolean;
   params: TableParams;
   getRowId: (row: TData) => string;
   /** Rendered above the table: search box, filter selects, etc. */
@@ -90,6 +96,7 @@ export function DataTable<TData>({
   columns,
   data,
   totalRows,
+  totalRowsCapped = false,
   params,
   getRowId,
   toolbar,
@@ -144,6 +151,12 @@ export function DataTable<TData>({
   const firstRow =
     totalRows === 0 ? 0 : (params.page - 1) * params.pageSize + 1;
   const lastRow = Math.min(params.page * params.pageSize, totalRows);
+  // Capped totals make the computed last page a lie, so Next stays enabled and
+  // a full page of rows is the signal that there is more.
+  const hasNextPage = totalRowsCapped
+    ? data.length === params.pageSize
+    : params.page < pageCount;
+  const totalLabel = `${totalRows.toLocaleString()}${totalRowsCapped ? "+" : ""}`;
   const isFiltered =
     params.search.trim() !== "" || Object.keys(params.filters).length > 0;
 
@@ -318,7 +331,7 @@ export function DataTable<TData>({
         >
           {totalRows === 0
             ? "No results"
-            : `${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${totalRows.toLocaleString()}`}
+            : `${firstRow.toLocaleString()}–${lastRow.toLocaleString()} of ${totalLabel}`}
         </p>
 
         <div className="flex items-center justify-between gap-2 sm:justify-end">
@@ -358,13 +371,13 @@ export function DataTable<TData>({
               <ChevronLeft className="size-4" aria-hidden />
             </Button>
             <span className="px-2 text-sm tabular-nums">
-              {params.page} / {pageCount}
+              {params.page} / {totalRowsCapped ? "…" : pageCount}
             </span>
             <Button
               type="button"
               variant="outline"
               size="icon"
-              disabled={params.page >= pageCount || busy}
+              disabled={!hasNextPage || busy}
               onClick={() => update({ page: params.page + 1 })}
               aria-label="Next page"
             >

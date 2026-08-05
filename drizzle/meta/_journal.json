@@ -8,6 +8,20 @@
       "when": 1785855860428,
       "tag": "0000_panoramic_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1785903061267,
+      "tag": "0001_dear_stellaris",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1785911661438,
+      "tag": "0002_abandoned_lady_deathstrike",
+      "breakpoints": true
     }
   ]
 }

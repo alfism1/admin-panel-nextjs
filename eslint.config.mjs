@@ -69,7 +69,7 @@ const eslintConfig = defineConfig([
 
   {
     files: [
-      "src/db/seed.ts",
+      "src/db/seed*.ts",
       "src/db/migrate.ts",
       "scripts/**/*.ts",
       "**/*.config.{ts,mts,js,mjs}",

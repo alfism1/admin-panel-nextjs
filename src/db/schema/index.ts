@@ -9,3 +9,4 @@ export * from "./auth";
 export * from "./rbac";
 export * from "./audit-log";
 export * from "./feature-flags";
+export * from "./products";
