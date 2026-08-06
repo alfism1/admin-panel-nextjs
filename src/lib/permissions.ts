@@ -1,14 +1,22 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import { defaultStatements } from "better-auth/plugins/admin/access";
 
+import {
+  resourceStatement,
+  resources,
+  type ResourceStatement,
+} from "@/lib/resource/registry";
+
 /**
  * The access-control statement: every `(resource, action)` pair the app knows
  * how to authorise. This is the compile-time source of truth — the `roles`
  * and `permissions` tables are its runtime projection, reconciled by the seed
  * (`syncPermissionCatalog`).
  *
- * Adding a resource here and re-running `pnpm db:seed` makes it appear in the
- * Roles permission matrix with no other code changes.
+ * Two halves. `CORE_STATEMENT` is hand-written, for the modules that predate
+ * the resource registry; everything in `lib/resource/registry.ts` contributes
+ * its own entry automatically, so a registered resource appears in the Roles
+ * permission matrix after `pnpm db:seed` with no edit to this file.
  *
  * The `user` and `session` action lists are a superset of Better-Auth's
  * `defaultStatements`: its built-in admin endpoints authorise against names
@@ -16,7 +24,7 @@ import { defaultStatements } from "better-auth/plugins/admin/access";
  * `/api/auth/admin/*`. The friendlier `read` alias is ours, and every role that
  * gets `read` is also granted `list`/`get` by the seed.
  */
-export const statement = {
+const CORE_STATEMENT = {
   user: [
     "create",
     "read",
@@ -35,8 +43,17 @@ export const statement = {
   role: ["create", "read", "update", "delete", "assign"],
   auditLog: ["read", "export"],
   featureFlag: ["create", "read", "update", "delete", "toggle"],
-  product: ["create", "read", "update", "delete", "archive"],
 } as const satisfies Record<string, readonly string[]>;
+
+/**
+ * The spread erases the literal types TypeScript needs to build
+ * `PermissionKey`, so the annotation puts them back. Both halves are still
+ * checked against `Record<string, readonly string[]>` by their own declaration.
+ */
+export const statement = {
+  ...CORE_STATEMENT,
+  ...resourceStatement,
+} as typeof CORE_STATEMENT & ResourceStatement;
 
 export const ac = createAccessControl(statement);
 
@@ -106,6 +123,26 @@ export interface SystemRoleDefinition {
 const allActions = <R extends Resource>(resource: R): readonly ActionFor<R>[] =>
   statement[resource] as unknown as readonly ActionFor<R>[];
 
+/**
+ * Default grants for registered resources.
+ *
+ * A deliberate policy, and the one thing about the registry worth arguing over:
+ * registering a resource grants it in full to `super_admin` and `admin`, and
+ * read-only to `viewer`, with no edit here. That matches what these roles mean
+ * — but it does mean a new resource is live for admins the moment it is
+ * registered and seeded. A resource that needs a narrower default should be
+ * listed explicitly in the role below, which still wins.
+ */
+const allResourceGrants = (): RoleGrants =>
+  Object.fromEntries(
+    resources.map((resource) => [resource.name, resource.actions]),
+  ) as RoleGrants;
+
+const readOnlyResourceGrants = (): RoleGrants =>
+  Object.fromEntries(
+    resources.map((resource) => [resource.name, ["read"]]),
+  ) as RoleGrants;
+
 export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
   {
     key: "super_admin",
@@ -120,7 +157,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: allActions("role"),
       auditLog: allActions("auditLog"),
       featureFlag: allActions("featureFlag"),
-      product: allActions("product"),
+      ...allResourceGrants(),
     },
   },
   {
@@ -148,7 +185,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: ["read"],
       auditLog: ["read", "export"],
       featureFlag: allActions("featureFlag"),
-      product: ["create", "read", "update", "delete", "archive"],
+      ...allResourceGrants(),
     },
   },
   {
@@ -161,7 +198,7 @@ export const SYSTEM_ROLES: readonly SystemRoleDefinition[] = [
       role: ["read"],
       auditLog: ["read"],
       featureFlag: ["read"],
-      product: ["read"],
+      ...readOnlyResourceGrants(),
     },
   },
 ] as const;

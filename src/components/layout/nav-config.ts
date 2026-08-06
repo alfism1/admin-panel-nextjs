@@ -1,7 +1,6 @@
 import {
   Flag,
   LayoutDashboard,
-  Package,
   ScrollText,
   Settings,
   ShieldCheck,
@@ -10,6 +9,7 @@ import {
 } from "lucide-react";
 
 import type { PermissionKey } from "@/lib/permissions";
+import { resources } from "@/lib/resource/registry";
 
 /**
  * The single source of truth for dashboard navigation.
@@ -35,7 +35,35 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const navigation: NavGroup[] = [
+/**
+ * Navigation contributed by the resource registry.
+ *
+ * A registered resource with a `nav` block appears in the sidebar, mobile
+ * drawer, command palette and breadcrumbs without touching this file. Groups
+ * are merged by label, so a resource can join an existing section by naming it.
+ */
+const resourceGroups: NavGroup[] = [];
+
+for (const resource of resources) {
+  if (!resource.nav) continue;
+
+  const item: NavItem = {
+    title: resource.pluralLabel,
+    href: resource.route,
+    icon: resource.icon,
+    description: resource.nav.description,
+    permission: `${resource.name}:read` as PermissionKey,
+    matchNested: true, // /products/123 highlights /products
+  };
+
+  const existing = resourceGroups.find(
+    (group) => group.label === resource.nav!.group,
+  );
+  if (existing) existing.items.push(item);
+  else resourceGroups.push({ label: resource.nav.group, items: [item] });
+}
+
+const staticNavigation: NavGroup[] = [
   {
     label: "Overview",
     items: [
@@ -101,19 +129,25 @@ export const navigation: NavGroup[] = [
       },
     ],
   },
-  {
-    label: "Product",
-    items: [
-      {
-        title: "Products",
-        href: "/products",
-        icon: Package,
-        description: "Catalogue, pricing and availability",
-        permission: "product:read", // typechecked against the statement
-        matchNested: true, // /products/123 highlights /products
-      },
-    ],
-  },
+];
+
+/**
+ * Static groups first, then resource groups — except where a resource names an
+ * existing group, in which case its items join that one in place.
+ */
+export const navigation: NavGroup[] = [
+  ...staticNavigation.map((group) => {
+    const contributed = resourceGroups.find(
+      (candidate) => candidate.label === group.label,
+    );
+    return contributed
+      ? { ...group, items: [...group.items, ...contributed.items] }
+      : group;
+  }),
+  ...resourceGroups.filter(
+    (group) =>
+      !staticNavigation.some((candidate) => candidate.label === group.label),
+  ),
 ];
 
 /** Flattened, for the command palette and breadcrumb lookup. */

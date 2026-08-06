@@ -17,6 +17,13 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -186,6 +193,52 @@ export function TextareaField<
           aria-invalid={invalid}
           aria-describedby={describedBy}
         />
+      )}
+    </FormFieldShell>
+  );
+}
+
+export function SelectField<
+  TFieldValues extends FieldValues,
+  TName extends FieldPath<TFieldValues>,
+>({
+  options,
+  placeholder,
+  ...props
+}: BaseFieldProps<TFieldValues, TName> & {
+  options: readonly { value: string; label: string }[];
+  placeholder?: string;
+}) {
+  return (
+    <FormFieldShell {...props}>
+      {({ field, id, describedBy, invalid }) => (
+        <Select
+          value={field.value === undefined ? "" : String(field.value)}
+          onValueChange={field.onChange}
+          disabled={field.disabled}
+        >
+          {/*
+            Radix renders a button, not a native `<select>`, so the blur that
+            marks the field touched has to be wired by hand.
+          */}
+          <SelectTrigger
+            id={id}
+            onBlur={field.onBlur}
+            ref={field.ref}
+            aria-invalid={invalid}
+            aria-describedby={describedBy}
+            className="w-full"
+          >
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )}
     </FormFieldShell>
   );

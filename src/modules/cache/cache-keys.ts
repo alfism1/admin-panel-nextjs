@@ -15,8 +15,8 @@ export const cacheTags = {
   featureFlags: "feature-flags",
   featureFlag: (key: string) => `feature-flag:${key}`,
   auditLogs: "audit-logs",
-  products: "products",
-  product: (id: string) => `product:${id}`,
+  // Registered resources build their own tags from the descriptor
+  // (`descriptor.cacheTag` / `recordCacheTag`), so they are not listed here.
 } as const;
 
 export const cacheKeys = {

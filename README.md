@@ -179,7 +179,8 @@ hostname. Expected ones keep theirs, because they were written to be read.
 
 ## How to add a new module
 
-Say you're adding **projects**. Roughly 20 minutes, in this order.
+Say you're adding **projects**. Two files and two lines, in this order — the
+full walkthrough is in [`docs/adding-a-module.md`](docs/adding-a-module.md).
 
 ### 1. Schema
 
@@ -189,126 +190,115 @@ export const projects = pgTable(
   "projects",
   {
     id: text("id").primaryKey(),
+    code: text("code").notNull(),
     name: text("name").notNull(),
     archived: boolean("archived").notNull().default(false),
     createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true, mode: "date" })
+      .notNull()
+      .defaultNow(),
   },
-  (table) => [index("projects_archived_idx").on(table.archived)],
+  (table) => [uniqueIndex("projects_code_unique").on(table.code)],
 );
 ```
 
-Export it from `src/db/schema/index.ts`, then:
+Export it from `src/db/schema/index.ts`, then `pnpm db:generate && pnpm db:migrate`.
 
-```bash
-pnpm db:generate && pnpm db:migrate
-```
+Field names in the resource must match the column keys here — that mapping is
+what the generic repository uses to build every query.
 
-### 2. Permissions
-
-Add the resource to the statement in `src/lib/permissions.ts`:
+### 2. The resource
 
 ```ts
-export const statement = {
-  // …
-  project: ["create", "read", "update", "delete", "archive"],
-} as const satisfies Record<string, readonly string[]>;
-```
-
-Grant it in `SYSTEM_ROLES`, then `pnpm db:seed`. It now appears in the Roles
-permission matrix automatically.
-
-### 3. Module
-
-Create `src/modules/projects/` with four files:
-
-- **`projects.schema.ts`** — zod for every input. Avoid `z.coerce` in a schema
-  a form uses: it makes the zod input type diverge from the output and fights
-  react-hook-form's single generic. Coerce at the REST boundary instead.
-- **`projects.repository.ts`** — Drizzle only. No authorization, no auditing.
-  This is the only layer allowed dialect-specific SQL (`ilike` and friends).
-- **`projects.service.ts`** — the real work, always in this order:
-
-  ```ts
-  async function archive(input: unknown) {
-    await requirePermission("project", "archive"); // 1. authorise
-    const values = archiveProjectSchema.parse(input); // 2. validate
-
-    const before = await projectsRepository.findById(values.id);
-    if (!before) throw new NotFoundError("Project", values.id);
-
-    const after = await projectsRepository.update(values.id, {
-      archived: true,
-    });
-
-    await logAudit({
-      // 3. audit
-      action: "project.archived",
-      resourceType: "project",
-      resourceId: values.id,
-      before: { archived: before.archived },
-      after: { archived: true },
-    });
-
-    invalidateQueryTags(cacheTags.projects); // 4. invalidate
-    return after;
-  }
-  ```
-
-- **`projects.actions.ts`** — `"use server"` wrappers. Thin:
-
-  ```ts
-  export async function archiveProjectAction(input: unknown) {
-    return withAction("projects.archive", async () => {
-      const project = await projectsService.archive(input);
-      revalidatePath("/projects");
-      return { id: project.id };
-    });
-  }
-  ```
-
-Add the new actions to `AUDIT_ACTIONS` and `AUDIT_RESOURCE_TYPES` in
-`src/modules/audit-log/audit-log.schema.ts`. It's a closed set so the filter
-dropdown stays honest and `"project.archvied"` can't become a silent second
-category.
-
-### 4. UI
-
-```tsx
-// src/app/(dashboard)/projects/page.tsx
-export default async function ProjectsPage({ searchParams }) {
-  if (!(await hasPermission("project", "read"))) return <Forbidden />;
-
-  const params = parseTableParams(await searchParams);
-  const { rows, total } = await projectsService.list(params);
-
-  return <ProjectsView projects={rows} totalRows={total} params={params} />;
-}
-```
-
-The client view renders `<DataTable>` and owns dialog state. Copy
-`src/modules/users/components/` — it's the reference implementation.
-
-### 5. Navigation
-
-One entry in `src/components/layout/nav-config.ts`. The sidebar, mobile drawer,
-command palette and breadcrumbs all read from it.
-
-```ts
-{
-  title: "Projects",
-  href: "/projects",
+// src/modules/projects/project.resource.ts
+export const projectResource = defineResource({
+  name: "project",
+  route: "/projects",
   icon: FolderKanban,
-  description: "Create, archive and assign projects",
-  permission: "project:read",
-  matchNested: true,
-}
+  nav: {
+    group: "Operations",
+    description: "Create, archive and assign projects",
+  },
+  archivable: true,
+  primaryField: "name",
+  secondaryField: "code",
+  fields: {
+    code: field.text({
+      label: "Code",
+      immutable: true,
+      unique: true,
+      searchable: true,
+    }),
+    name: field.text({ label: "Name", max: 160, searchable: true }),
+    budgetCents: field.money({ label: "Budget", currency: "USD" }),
+    notes: field.textarea({ label: "Notes", optional: true, inTable: false }),
+  },
+});
 ```
 
-### 6. Tests and stories
+```ts
+// src/modules/projects/project.server.ts
+export const projectBackend = createResourceBackend(projectResource, {
+  table: projects,
+});
+```
 
-- Service tests with a mocked repository — the business rules are the point.
+The split is a bundling boundary, not ceremony: `*.resource.ts` is reachable
+from the browser (the sidebar and the form read it), so it must not import a
+Drizzle table. `*.server.ts` is where that binding lives.
+
+### 3. Register it
+
+One line in each registry:
+
+```ts
+// src/lib/resource/registry.ts
+export const resources = [productResource, projectResource] as const;
+
+// src/lib/resource/registry.server.ts
+const backends: ResourceBackend[] = [productBackend, projectBackend];
+```
+
+Then `pnpm db:seed`. That's the module.
+
+### What you get without writing it
+
+| Derived                                                      | From                             |
+| ------------------------------------------------------------ | -------------------------------- |
+| `project:create/read/update/delete/archive` in the statement | `name` + `archivable`            |
+| Sidebar, command palette, breadcrumbs                        | `nav`                            |
+| `project.created/updated/deleted/archived/unarchived`        | the audit vocabulary             |
+| Cache tags and invalidation                                  | `descriptor.cacheTag`            |
+| `/projects` page, table, filters, pager                      | the catch-all `[resource]` route |
+| Create/edit dialog with server-error mapping                 | `fields`                         |
+| Repository, service, Server Actions                          | `createResourceBackend`          |
+| Role grants (full for admins, read for viewers)              | `lib/permissions.ts`             |
+
+Permission checks, audit entries and cache invalidation are no longer things a
+module can forget, because a module no longer writes them.
+
+### 4. Escape hatches
+
+The descriptor covers CRUD. Anything else stays ordinary code:
+
+- **Business rules** — `rules.beforeCreate` / `beforeUpdate` / `beforeDelete`
+  on `createResourceBackend`, and `rules.snapshot` to change what the audit log
+  stores.
+- **A custom field schema** — `field.text({ schema: mySkuSchema })`. It applies
+  to both the stored and the edited representation.
+- **A screen the generic index can't express** — add a real
+  `src/app/(dashboard)/projects/page.tsx`. A static segment beats the dynamic
+  one, so it takes over with no other change.
+- **A field type that doesn't exist yet** — add a builder to
+  `src/lib/resource/fields.ts`; every resource gets it.
+
+### 5. Tests and stories
+
+- The descriptor is data, so assert on it directly — see
+  `src/lib/resource/resource.test.ts`.
+- Service tests with a mocked repository for anything in `rules`.
 - A Playwright spec if it has a write path worth protecting.
 - Stories for anything reusable you added to `components/shared/`.
 
